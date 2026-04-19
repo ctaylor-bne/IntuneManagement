@@ -658,7 +658,7 @@ function Get-GraphObjects
     {
         #Use default page size or use below for a specific page size for testing
         #$params.Add("pageSize",5) #!!!
-        if ($pageSize -gt 0)
+        if ($pageSize -gt 0 -and $objectType.SupportsTopQuery -ne $false)
         {
             $params.Add("pageSize", $pageSize)
         }

@@ -55,6 +55,20 @@ function Invoke-CDDocumentObject
             Properties = @("Name","Value","Category","SubCategory") #,"RawValue","Description"
         }
     }
+    elseif($type -eq '#microsoft.graph.authenticationStrengthPolicy')
+    {
+        Invoke-CDDocumentAuthenticationStrength $documentationObj
+        return [PSCustomObject]@{
+            Properties = @("Name","Value","Category","SubCategory")
+        }
+    }
+    elseif($type -eq '#microsoft.graph.authenticationContextClassReference')
+    {
+        Invoke-CDDocumentAuthenticationContext $documentationObj
+        return [PSCustomObject]@{
+            Properties = @("Name","Value","Category","SubCategory")
+        }
+    }
     elseif($type -eq '#microsoft.graph.agreement')
     {
         Invoke-CDDocumentTermsOfUse $documentationObj
@@ -2262,6 +2276,122 @@ function Invoke-CDDocumentIPNamedLocation
         Value = $ipList -join $script:objectSeparator
         EntityKey = "ipRanges"
     })         
+}
+
+# Convert Graph enum values to readable strings for documentation output
+function Get-CDAuthenticationStrengthDisplayValue
+{
+    param($value)
+
+    switch ($value)
+    {
+        "builtIn" { "Built-in" }
+        "custom" { "Custom" }
+        "mfa" { "MFA" }
+        "none" { "None" }
+        "unknownFutureValue" { "Unknown future value" }
+        default { $value }
+    }
+}
+
+# Document Authentication Strength policy
+function Invoke-CDDocumentAuthenticationStrength
+{
+    param($documentationObj)
+
+    $obj = $documentationObj.Object
+    $objectType = $documentationObj.ObjectType
+
+    $script:objectSeparator = ?? $global:cbDocumentationObjectSeparator.SelectedValue ([System.Environment]::NewLine)
+    $script:propertySeparator = ?? $global:cbDocumentationPropertySeparator.SelectedValue ","
+
+    Add-BasicPropertyValue (Get-LanguageString "SettingDetails.nameName") $obj.displayName
+    Add-BasicPropertyValue (Get-LanguageString "TableHeaders.configurationType") $objectType.Title
+    if($obj.description)
+    {
+        Add-BasicPropertyValue (Get-LanguageString "TableHeaders.description") $obj.description
+    }
+    Add-BasicAdditionalValues $obj $objectType
+
+    $category = Get-LanguageString "TableHeaders.settings"
+
+    if($obj.policyType)
+    {
+        Add-CustomSettingObject ([PSCustomObject]@{
+            Name = Get-LanguageString "TableHeaders.policyType"
+            Value = Get-CDAuthenticationStrengthDisplayValue $obj.policyType
+            Category = $category
+            SubCategory = $null
+            EntityKey = "policyType"
+        })
+    }
+
+    if($obj.requirementsSatisfied)
+    {
+        Add-CustomSettingObject ([PSCustomObject]@{
+            Name = "Requirements satisfied"
+            Value = Get-CDAuthenticationStrengthDisplayValue $obj.requirementsSatisfied
+            Category = $category
+            SubCategory = $null
+            EntityKey = "requirementsSatisfied"
+        })
+    }
+
+    $allowedCombinations = @($obj.allowedCombinations | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) })
+    if($allowedCombinations.Count -gt 0)
+    {
+        Add-CustomSettingObject ([PSCustomObject]@{
+            Name = "Allowed combinations"
+            Value = $allowedCombinations -join $script:objectSeparator
+            Category = $category
+            SubCategory = $null
+            EntityKey = "allowedCombinations"
+        })
+    }
+}
+
+# Document Authentication Context
+function Invoke-CDDocumentAuthenticationContext
+{
+    param($documentationObj)
+
+    $obj = $documentationObj.Object
+    $objectType = $documentationObj.ObjectType
+
+    $script:objectSeparator = ?? $global:cbDocumentationObjectSeparator.SelectedValue ([System.Environment]::NewLine)
+    $script:propertySeparator = ?? $global:cbDocumentationPropertySeparator.SelectedValue ","
+
+    Add-BasicPropertyValue (Get-LanguageString "SettingDetails.nameName") $obj.displayName
+    Add-BasicPropertyValue (Get-LanguageString "TableHeaders.configurationType") $objectType.Title
+    if($obj.description)
+    {
+        Add-BasicPropertyValue (Get-LanguageString "TableHeaders.description") $obj.description
+    }
+    Add-BasicAdditionalValues $obj $objectType
+
+    $category = Get-LanguageString "TableHeaders.settings"
+
+    if($null -ne $obj.isAvailable)
+    {
+        Add-CustomSettingObject ([PSCustomObject]@{
+            Name = "Available"
+            Value = Get-LanguageString (?: $obj.isAvailable "Inputs.enabled" "Inputs.disabled")
+            Category = $category
+            SubCategory = $null
+            EntityKey = "isAvailable"
+        })
+    }
+
+    if($obj.id)
+    {
+        Add-CustomSettingObject ([PSCustomObject]@{
+            Name = "ID"
+            Value = $obj.id
+            Category = $category
+            SubCategory = $null
+            EntityKey = "id"
+        })
+    }
 }
 
 # Document Terms of Use

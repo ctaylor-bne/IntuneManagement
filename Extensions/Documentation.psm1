@@ -513,6 +513,36 @@ function Get-ObjectTypeGroupName
 
 }
 
+function Add-DocumentationCategoryInfo
+{
+    param($documentationObject)
+
+    if(-not $documentationObject) { return }
+
+    if($documentationObject.ObjectType.GroupId -eq "EndpointSecurity")
+    {
+        $categoryId = $documentationObject.Category
+        if([string]::IsNullOrWhiteSpace([string]$categoryId))
+        {
+            $categoryId = $documentationObject.ObjectType.Id
+            $categoryName = $documentationObject.ObjectType.Title
+        }
+        else
+        {
+            $categoryName = Get-IntentCategory $categoryId
+        }
+
+        $documentationObject | Add-Member Noteproperty -Name "Category" -Value $categoryId -Force
+        $documentationObject | Add-Member Noteproperty -Name "CategoryName" -Value (?? $categoryName $documentationObject.ObjectType.Title) -Force
+    }
+    else
+    {
+        $documentationObject | Add-Member Noteproperty -Name "Category" -Value $documentationObject.ObjectType.Id -Force
+    }
+
+    $documentationObject | Add-Member Noteproperty -Name "GroupName" -Value (Get-ObjectTypeGroupName $documentationObject.ObjectType) -Force
+}
+
 function Get-ObjectTypeString
 {
     param($obj, $objectType)
@@ -4471,17 +4501,7 @@ function local:Invoke-StartDocumentatiom
             {
                 $groupSourceList += $tmpObj
                 $curObjectType = $tmpObj.ObjectType
-                if($curObjectType.GroupId -eq "EndpointSecurity")
-                {
-                    $catName = Get-IntentCategory $tmpObj.Category
-                    $tmpObj | Add-Member Noteproperty -Name "CategoryName" -Value $catName -Force
-                }
-                else
-                {
-                    $tmpObj | Add-Member Noteproperty -Name "Category" -Value $tmpObj.ObjectType.Id -Force
-                }
-
-                $tmpObj | Add-Member Noteproperty -Name "GroupName" -Value (Get-ObjectTypeGroupName $tmpObj.ObjectType) -Force
+                Add-DocumentationCategoryInfo $tmpObj
             }
 
             if($groupSourceList.Count -eq 0) { contnue }
@@ -4543,8 +4563,7 @@ function local:Invoke-StartDocumentatiom
             {
                 foreach($tmpObj in $groupSourceList)
                 {
-                    $catName = Get-IntentCategory $tmpObj.Category
-                    $tmpObj | Add-Member Noteproperty -Name "CategoryName" -Value $catName -Force
+                    Add-DocumentationCategoryInfo $tmpObj
                 }
                 $sortProps = @("CategoryName","displayName")
             }
@@ -4552,8 +4571,7 @@ function local:Invoke-StartDocumentatiom
             {
                 foreach($tmpObj in $groupSourceList)
                 {
-                    $tmpObj | Add-Member Noteproperty -Name "Category" -Value $tmpObj.ObjectType.Id -Force
-                    $tmpObj | Add-Member Noteproperty -Name "GroupName" -Value (Get-ObjectTypeGroupName $tmpObj.ObjectType) -Force
+                    Add-DocumentationCategoryInfo $tmpObj
                 }                
                 #!!!###$sortProps = @({$_.ObjectType.Title},{(Get-GraphObjectName $_.Object $_.ObjectType)}) 
                 $sortProps = @({$_.GroupName},{(Get-GraphObjectName $_.Object $_.ObjectType)}) 

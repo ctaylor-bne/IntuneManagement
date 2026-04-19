@@ -811,6 +811,7 @@ function Invoke-InitializeModule
         Id = "AuthenticationStrengths"
         ViewID = "IntuneGraphAPI"
         API = "/identity/conditionalAccess/authenticationStrengths/policies"
+        SupportsTopQuery = $false
         PreImportCommand = { Start-PreImportCommandAuthenticationStrengths @args }
         PropertiesToRemove = @()
         ImportOrder = 45
@@ -825,6 +826,7 @@ function Invoke-InitializeModule
         Id = "AuthenticationContext"
         ViewID = "IntuneGraphAPI"
         API = "/identity/conditionalAccess/authenticationContextClassReferences"
+        SupportsTopQuery = $false
         PropertiesToRemove = @("@odata.type")
         SkipRemoveProperties = @('Id') 
         ImportOrder = 46
